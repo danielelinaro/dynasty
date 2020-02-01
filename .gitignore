@@ -1,4 +1,6 @@
 *~
 *.o
-out.dat
+*.dat
 dynasty
+.DS_Store
+.ipynb_checkpoints
