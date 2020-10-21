@@ -22,11 +22,14 @@
 #define ATOL1 RCONST(1.0e-10)  /* vector absolute tolerance components */
 #define ATOL2 RCONST(1.0e-10)
 #define ATOL3 RCONST(1.0e-10)
+#ifndef PYTHON
 #define TTRAN RCONST(1.0e4)
 #define TEND  RCONST(1.0e5)
+#endif
 
 #define EPS   RCONST(1.0E-3)
 
+#ifndef PYTHON
 #define R     RCONST(0.07)
 #define E     RCONST(2.0)
 #define B     RCONST(0.17)
@@ -34,9 +37,14 @@
 #define G     RCONST(0.09)
 #define H     RCONST(0.1)
 #define Q     RCONST(0.4)
+#endif
 
 #define MAX_STEPS 50000
+#ifndef PYTHON
 #define MAX_NEV   64
+#endif
+
+//#define DEBUG
 
 /* Functions Called by the Solver */
 
@@ -62,18 +70,41 @@ static int trim_zero(realtype *y1, realtype *y2, realtype *y3);
  *-------------------------------
  */
 
+#ifdef PYTHON
+
+#include <Python.h>
+
+int integrate(double R,
+	      double E,
+	      double B,
+	      double D,
+	      double G,
+              double H,
+              double Q,
+	      double TTRAN,
+	      double TEND,
+	      size_t MAX_NEV)
+
+#else
+
 int main()
+
+#endif
 {
-        realtype reltol, t, buf[NEQ+1], pars_buf[NPARS];
+        realtype reltol, t;
         N_Vector y, pars, abstol;
         SUNMatrix A;
         SUNLinearSolver LS;
         void *cvode_mem;
         int retval, retvalr;
         int rootsfound[2], rootdir;
-        size_t i, nev;
+        size_t nev = 0;
 
+#ifndef PYTHON
+	size_t i;
+	realtype buf[NEQ+1], pars_buf[NPARS];
         FILE *fid;
+#endif
         
         y = pars = abstol = NULL;
         A = NULL;
@@ -99,6 +130,7 @@ int main()
                 return(1);
         }
         
+#ifndef PYTHON
         fid = fopen("dynasty.dat", "wb");
         if (fid == NULL) {
                 N_VDestroy(abstol);
@@ -106,6 +138,7 @@ int main()
                 N_VDestroy(y);
                 return(1);
         }
+#endif
 
         /* Initialize y */
         Ith(y,0) = Y0;
@@ -113,7 +146,7 @@ int main()
         Ith(y,2) = Y2;
 
         /* Initialize pars */
-        Ith(pars,0) = log(R);
+        Ith(pars,0) = R;
         Ith(pars,1) = E;
         Ith(pars,2) = B;
         Ith(pars,3) = D;
@@ -201,6 +234,7 @@ int main()
         if ( check_retval(&retval, "CVodeRootInit", 1) )
                 goto free_solver;
 
+#ifndef PYTHON
         fprintf(fid, "NEQ: %d\n", NEQ);
         fprintf(fid, "NPARS: %d\n", NPARS);
         fprintf(fid, "NEV: %d\n", MAX_NEV);
@@ -209,12 +243,12 @@ int main()
         fprintf(fid, "sizeof(realtype): %lu\n", sizeof(realtype));
         fprintf(fid, "Binary:\n");
 
-        nev = 0;
         fwrite(&nev, 1, sizeof(size_t), fid);
 
         for (i=0; i<NPARS; i++)
                 pars_buf[i] = Ith(pars, i);
         fwrite(pars_buf, NPARS, sizeof(realtype), fid);
+#endif
 
         while (nev < MAX_NEV && t < TEND) {
                 retval = CVode(cvode_mem, TEND, y, &t, CV_NORMAL);
@@ -223,14 +257,16 @@ int main()
                         if (check_retval(&retvalr, "CVodeGetRootInfo", 1))
                                 break;
                         ++nev;
+#ifndef PYTHON
                         buf[0] = t;
                         buf[1] = Ith(y,0);
                         buf[2] = Ith(y,1);
                         buf[3] = Ith(y,2);
                         fwrite(&nev, 1, sizeof(size_t), fid);
                         fwrite(buf, NEQ+1, sizeof(realtype), fid);
+#endif
 #ifdef DEBUG
-                        printf("[%03zu]  %8.2f  %7.5f  %7.5f  %7.5f\n", nev, t, Ith(y,0), Ith(y,1), Ith(y,2));
+                        printf("[%03zu/%03zu]  %8.2f  %7.5f  %7.5f  %7.5f\n", nev, MAX_NEV, t, Ith(y,0), Ith(y,1), Ith(y,2));
 #endif
                 }
                 if (check_retval(&retval, "CVode", 1))
@@ -250,8 +286,10 @@ free_mem:
         CVodeFree(&cvode_mem);
 
 free_vec:
+#ifndef PYTHON
         /* Close the data file */
         fclose(fid);
+#endif
 
         /* Free y, pars and abstol vectors */
         N_VDestroy(abstol);
