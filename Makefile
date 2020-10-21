@@ -1,22 +1,17 @@
 CC = gcc
 CXX = g++
-CFLAGS = -Wall -g -I/home/daniele/local/sundials/include
-LDFLAGS = -L/home/daniele/local/sundials/lib
-LIBS = -lsundials_cvode -lsundials_nvecserial -lm
+CFLAGS = -g -Wall -fPIC -I/home/daniele/local/sundials/include $(shell python3-config --cflags)
 OBJS = dynasty.o
 
-%.o: %.c $(DEPS)
+%.o : %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-dynasty : $(OBJS)
-	$(CC) -o $@ $^ $(LDFLAGS) $(LIBS)
-	
-sharedlib :
-	$(CC) -g -c -fPIC -DPYTHON $(shell python3-config --cflags) \
-		$(CFLAGS) dynasty.c -o dynasty.o
+.PHONY : sharedlib
+
+sharedlib : $(OBJS)
 	$(CXX) -g -o dynasty.so -fPIC -shared \
 		-static-libgcc -static-libstdc++ \
-		dynasty.o \
+		$(OBJS) \
 		-Wl,-zmuldefs \
 		-Wl,--whole-archiv \
 		-Wl,--no-whole-archiv \
@@ -29,4 +24,4 @@ sharedlib :
 		-lpthread
 
 clean :
-	rm -f dynasty *.o *.so
+	rm -f *.o *.so
