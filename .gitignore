@@ -1,5 +1,6 @@
 *~
 *.o
+*.dylib
 *.dat
 dynasty
 .DS_Store

@@ -1,14 +1,20 @@
 CC=gcc
-CFLAGS=-I/Users/daniele/local/include -I/usr/include -Wall -O3
+CXX=g++
+CFLAGS=-I/Users/daniele/local/include -I/usr/include -O3
 LDFLAGS=-L/Users/daniele/local/lib
-LIBS=-lsundials_cvode -lsundials_nvecserial -lm
+LIBS=-lsundials_cvode -lsundials_nvecserial -lm -lpthread
 OBJS=dynasty.o
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-dynasty : $(OBJS)
-	$(CC) -o $@ $^ $(LDFLAGS) $(LIBS)
+dynasty : dynasty.c
+	$(CC) -c -o dynasty.o $(CFLAGS) dynasty.c
+	$(CC) -o dynasty $(OBJS) $(LDFLAGS) $(LIBS)
 	
+lib : dynasty.c
+	$(CC) -g -c -o dynasty.o -fPIC -DLIB $(CFLAGS) dynasty.c
+	$(CXX) -g -o dynasty.dylib -fPIC -shared $(LDFLAGS) dynasty.o $(LIBS)
+
 clean :
-	rm -f dynasty *.o
+	rm -f dynasty *.o *.dylib *.so
