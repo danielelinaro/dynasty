@@ -4,13 +4,9 @@ print('\n***Compute a stationary solution family***')
 eq = run(e='dynasty',c='eq')
 save(eq,'eq')
 
-#print "\n***Compute periodic solution families***"
-#for solution in abc('HB'):
-#    abc=abc+run(solution,c='abc.2')
-#
-#print "\n***Relabel the output***"
-#abc=rl(abc)
-#save(abc,'abc')
+print("\n***Compute periodic solution families***")
+for solution in eq('HB'):
+    cycle = run(solution, c='lc')
 
 print('***Clean the directory***')
 cl()
